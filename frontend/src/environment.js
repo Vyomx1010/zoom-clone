@@ -1,6 +1,6 @@
 let IS_PROD = true;
 const server = IS_PROD
-  ? "http://localhost:8000"
-  : "http://localhost:8000";
+  ? "https://zoom-clone-kappa-steel.vercel.app"
+  : "https://zoom-clone-kappa-steel.vercel.app";
 
 export default server;
