@@ -36,7 +36,7 @@ export default function LandingPage() {
     setFormStatus({ loading: true, success: null, error: null });
 
     try {
-      const response = await fetch('http://localhost:8000/api/send-email', {
+      const response = await fetch('https://zoom-clone-kappa-steel.vercel.app/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, message }),
