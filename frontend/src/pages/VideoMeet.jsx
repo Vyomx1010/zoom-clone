@@ -26,7 +26,7 @@ const CustomModal = ({ isOpen, onClose, title, children }) => {
   );
 };
 
-const ControlButton = ({ icon: Icon, isActive, onClick, label }) => (
+const ControlButton = ({ icon: Icon, isActive, onClick, label, children }) => (
   <button
     className={`p-3 rounded-full ${isActive ? 'bg-green-600' : 'bg-gray-600'} hover:bg-opacity-80 transition duration-300 flex items-center justify-center relative`}
     onClick={onClick}
@@ -34,6 +34,7 @@ const ControlButton = ({ icon: Icon, isActive, onClick, label }) => (
   >
     <Icon size={24} className="text-white" />
     {!isActive && <div className="absolute w-8 h-1 bg-red-500 rotate-45" />}
+    {children}
   </button>
 );
 
@@ -411,24 +412,53 @@ export default function VideoMeet() {
       </CustomModal>
 
       {!showUsernameModal && (
-        <>
-          <div className="flex flex-1 overflow-hidden">
-            <div className="flex-1 p-6 flex flex-col">
+        <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
+          <div className="flex-1 p-6 flex flex-col">
+            {screen ? (
+              <div className="flex flex-col h-full">
+                {/* Shared Screen - Larger Area */}
+                <div className="flex-1 bg-gray-800 rounded-xl overflow-hidden shadow-lg mb-4">
+                  <video ref={localVideoRef} autoPlay muted className="w-full h-full object-cover" />
+                  <div className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
+                    Shared Screen ({username})
+                  </div>
+                </div>
+                {/* Other Participants - Smaller Grid */}
+                <div className="grid grid-cols-4 gap-2">
+                  {videos.map((video) => (
+                    <div
+                      key={video.socketId}
+                      className="relative bg-gray-800 rounded-xl overflow-hidden shadow-lg aspect-video"
+                    >
+                      <video
+                        data-socket={video.socketId}
+                        ref={(ref) => {
+                          if (ref && video.stream) ref.srcObject = video.stream;
+                        }}
+                        autoPlay
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm flex items-center gap-2">
+                        Participant
+                        {peerStates[video.socketId]?.video === false && (
+                          <VideoOff size={16} className="text-red-500" />
+                        )}
+                        {peerStates[video.socketId]?.audio === false && (
+                          <MicOff size={16} className="text-red-500" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-auto">
                 <div className="relative bg-gray-800 rounded-xl overflow-hidden shadow-lg aspect-video">
-                  <video
-                    ref={localVideoRef}
-                    autoPlay
-                    muted
-                    className="w-full h-full object-cover"
-                  />
+                  <video ref={localVideoRef} autoPlay muted className="w-full h-full object-cover" />
                   <div className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm flex items-center gap-2">
                     You ({username})
                     {!video && <VideoOff size={16} className="text-red-500" />}
                     {!audio && <MicOff size={16} className="text-red-500" />}
-                  </div>
-                  <div className="absolute top-2 right-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
-                    My Screen
                   </div>
                 </div>
                 {videos.map((video) => (
@@ -446,115 +476,115 @@ export default function VideoMeet() {
                     />
                     <div className="absolute bottom-2 left-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm flex items-center gap-2">
                       Participant
-                      {peerStates[video.socketId]?.video === false && <VideoOff size={16} className="text-red-500" />}
-                      {peerStates[video.socketId]?.audio === false && <MicOff size={16} className="text-red-500" />}
-                    </div>
-                    <div className="absolute top-2 right-2 bg-gray-900 bg-opacity-75 text-white px-2 py-1 rounded-md text-sm">
-                      User Screen
+                      {peerStates[video.socketId]?.video === false && (
+                        <VideoOff size={16} className="text-red-500" />
+                      )}
+                      {peerStates[video.socketId]?.audio === false && (
+                        <MicOff size={16} className="text-red-500" />
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="flex justify-center gap-4 mt-6">
+            )}
+            <div className="flex justify-center gap-4 mt-6">
+              <ControlButton
+                icon={video ? Video : VideoOff}
+                isActive={video}
+                onClick={handleVideo}
+                label={video ? 'Turn off video' : 'Turn on video'}
+              />
+              <ControlButton
+                icon={audio ? Mic : MicOff}
+                isActive={audio}
+                onClick={handleAudio}
+                label={audio ? 'Mute microphone' : 'Unmute microphone'}
+              />
+              {screenAvailable && (
                 <ControlButton
-                  icon={video ? Video : VideoOff}
-                  isActive={video}
-                  onClick={handleVideo}
-                  label={video ? 'Turn off video' : 'Turn on video'}
+                  icon={Monitor}
+                  isActive={screen}
+                  onClick={handleScreen}
+                  label={screen ? 'Stop sharing' : 'Share screen'}
                 />
-                <ControlButton
-                  icon={audio ? Mic : MicOff}
-                  isActive={audio}
-                  onClick={handleAudio}
-                  label={audio ? 'Mute microphone' : 'Unmute microphone'}
-                />
-                {screenAvailable && (
-                  <ControlButton
-                    icon={Monitor}
-                    isActive={screen}
-                    onClick={handleScreen}
-                    label={screen ? 'Stop sharing' : 'Share screen'}
-                  />
+              )}
+              <ControlButton
+                icon={MessageCircle}
+                isActive={showChat}
+                onClick={openChat}
+                label="Open chat"
+              >
+                {newMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {newMessages}
+                  </span>
                 )}
-                <ControlButton
-                  icon={MessageCircle}
-                  isActive={showChat}
-                  onClick={openChat}
-                  label="Open chat"
-                >
-                  {newMessages > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {newMessages}
-                    </span>
-                  )}
-                </ControlButton>
-                <ControlButton
-                  icon={LogOut}
-                  isActive={false}
-                  onClick={handleEndCall}
-                  label="Leave meeting"
-                />
-              </div>
+              </ControlButton>
+              <ControlButton
+                icon={LogOut}
+                isActive={false}
+                onClick={handleEndCall}
+                label="Leave meeting"
+              />
             </div>
-            {showChat && (
-              <div className="w-96 bg-white shadow-xl flex flex-col border-l border-gray-200">
-                <div className="p-4 bg-gray-800 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-white">Meeting Chat</h3>
-                  <button onClick={closeChat} className="text-gray-300 hover:text-white">
-                    <X size={24} />
-                  </button>
-                </div>
-                <div
-                  ref={chatContainerRef}
-                  className="flex-1 p-4 overflow-y-auto bg-gray-50"
-                >
-                  {messages.length > 0 ? (
-                    messages.map((item, index) => (
-                      <div
-                        key={index}
-                        className={`mb-4 ${
-                          item.socketId === socketIdRef.current ? 'text-right' : 'text-left'
+          </div>
+          {showChat && (
+            <div className="w-full md:w-96 bg-white shadow-xl flex flex-col border-l border-gray-200">
+              <div className="p-4 bg-gray-800 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white">Meeting Chat</h3>
+                <button onClick={closeChat} className="text-gray-300 hover:text-white">
+                  <X size={24} />
+                </button>
+              </div>
+              <div ref={chatContainerRef} className="flex-1 p-4 overflow-y-auto bg-gray-50">
+                {messages.length > 0 ? (
+                  messages.map((item, index) => (
+                    <div
+                      key={index}
+                      className={`mb-4 ${item.socketId === socketIdRef.current ? 'text-right' : 'text-left'}`}
+                    >
+                      <p className="text-sm text-gray-600">{item.sender}</p>
+                      <p
+                        className={`inline-block p-2 rounded-lg ${
+                          item.socketId === socketIdRef.current ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
                         }`}
                       >
-                        <p className="text-sm text-gray-600">{item.sender}</p>
-                        <p
-                          className={`inline-block p-2 rounded-lg ${
-                            item.socketId === socketIdRef.current
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-800'
-                          }`}
-                        >
-                          {item.data}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 text-center">No messages yet</p>
-                  )}
-                </div>
-                <div className="p-4 border-t border-gray-200">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      className="flex-1 p-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={message}
-                      onChange={handleMessage}
-                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                      placeholder="Type a message..."
-                    />
-                    <button
-                      className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
-                      onClick={sendMessage}
-                      disabled={!message.trim()}
-                    >
-                      <Send size={20} />
-                    </button>
-                  </div>
+                        {item.data}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center">No messages yet</p>
+                )}
+              </div>
+              <div className="p-4 border-t border-gray-200">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 p-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={message}
+                    onChange={handleMessage}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    placeholder="Type a message..."
+                  />
+                  <button
+                    type="button"
+                    className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+                    onClick={sendMessage}
+                    disabled={!message.trim()}
+                  >
+                    <Send size={20} />
+                  </button>
                 </div>
               </div>
-            )}
-          </div>
-        </>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
